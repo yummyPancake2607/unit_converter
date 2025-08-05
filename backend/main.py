@@ -1,20 +1,18 @@
-from fastapi import FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Query, Request, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
-# Serve static files from frontend/static
+# Adjust these paths if your folder structure changes
+# Assume your backend folder is /backend and frontend inside /frontend at the repo root
 app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
-
-# Templates directory (frontend root contains index.html)
 templates = Jinja2Templates(directory="../frontend")
 
-# Conversion functions
+# Conversion functions (unchanged from your original code)
 
 def convert_length(value: float, unit_from: str, unit_to: str) -> float:
-    # Base unit: meter
     to_meters = {
         "meter": 1,
         "kilometer": 1000,
@@ -28,7 +26,6 @@ def convert_length(value: float, unit_from: str, unit_to: str) -> float:
     return meters / to_meters[unit_to]
 
 def convert_weight(value: float, unit_from: str, unit_to: str) -> float:
-    # Base unit: kg
     to_kg = {
         "kg": 1,
         "pounds": 0.453592,
@@ -43,8 +40,6 @@ def convert_weight(value: float, unit_from: str, unit_to: str) -> float:
 def convert_temperature(value: float, unit_from: str, unit_to: str) -> float:
     if unit_from == unit_to:
         return value
-
-    # Convert input to Celsius first
     if unit_from == "Celsius":
         celsius = value
     elif unit_from == "Fahrenheit":
@@ -53,8 +48,6 @@ def convert_temperature(value: float, unit_from: str, unit_to: str) -> float:
         celsius = value - 273.15
     else:
         return value
-
-    # Convert from Celsius to target
     if unit_to == "Celsius":
         return celsius
     elif unit_to == "Fahrenheit":
@@ -65,7 +58,6 @@ def convert_temperature(value: float, unit_from: str, unit_to: str) -> float:
         return value
 
 def convert_storage(value: float, unit_from: str, unit_to: str) -> float:
-    # Base unit: bytes
     to_bytes = {
         "bytes": 1,
         "KB": 1024,
@@ -79,7 +71,6 @@ def convert_storage(value: float, unit_from: str, unit_to: str) -> float:
     return bytes_value / to_bytes[unit_to]
 
 def convert_speed(value: float, unit_from: str, unit_to: str) -> float:
-    # Base unit: m/s
     to_mps = {
         "m/s": 1,
         "km/h": 1 / 3.6,
@@ -92,7 +83,6 @@ def convert_speed(value: float, unit_from: str, unit_to: str) -> float:
     return mps_value / to_mps[unit_to]
 
 def convert_volume(value: float, unit_from: str, unit_to: str) -> float:
-    # Base unit: liters
     to_liters = {
         "L": 1,
         "mL": 0.001,
@@ -105,12 +95,11 @@ def convert_volume(value: float, unit_from: str, unit_to: str) -> float:
     return liters_value / to_liters[unit_to]
 
 def convert_area(value: float, unit_from: str, unit_to: str) -> float:
-    # Base unit: square meters (m²)
     to_m2 = {
         "m²": 1,
         "km²": 1_000_000,
         "ft²": 0.092903,
-        "in²": 0.00064516,  # inch squared to m²
+        "in²": 0.00064516,
         "cm²": 0.0001
     }
     if unit_from not in to_m2 or unit_to not in to_m2:
@@ -125,8 +114,8 @@ def convert_time(value: float, unit_from: str, unit_to: str) -> float:
         "hour": 3600,
         "day": 86400,
         "week": 604800,
-        "month": 2629800,   # average month (30.44 days)
-        "year": 31557600    # average year (365.25 days)
+        "month": 2629800,
+        "year": 31557600
     }
     unit_from = unit_from.lower()
     unit_to = unit_to.lower()
@@ -168,3 +157,13 @@ async def convert(
         result = convert_time(value, unit_from, unit_to)
 
     return JSONResponse({"converted_value": result})
+
+# Catch-all route to serve index.html for frontend routes (SPA support)
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def catch_all(request: Request, full_path: str):
+    # To avoid hijacking API or static routes, check and 404 or redirect as needed
+    if full_path.startswith("convert") or full_path.startswith("static"):
+        # You can also customize API handling here if needed
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    return templates.TemplateResponse("index.html", {"request": request})
