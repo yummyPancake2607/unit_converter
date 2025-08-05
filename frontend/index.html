@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter</title>
+    <script>
+        function updateUnitOptions() {
+            const category = document.getElementById("category").value;
+            const unitFrom = document.getElementById("unit_from");
+            const unitTo = document.getElementById("unit_to");
+
+            // Clear current options
+            unitFrom.innerHTML = "";
+            unitTo.innerHTML = "";
+
+            // Define available units for each category -- these must match backend!
+            const units = {
+                "length": {
+                    "from": ["meter", "kilometer", "cm", "inches", "feet"],
+                    "to": ["meter", "kilometer", "cm", "inches", "feet"]
+                },
+                "weight": {
+                    "from": ["kg", "pounds", "g", "ounces"],
+                    "to": ["kg", "pounds", "g", "ounces"]
+                },
+                "temperature": {
+                    "from": ["Celsius", "Fahrenheit", "Kelvin"],
+                    "to": ["Celsius", "Fahrenheit", "Kelvin"]
+                },
+                "storage": {
+                    "from": ["KB", "MB", "GB", "TB", "bytes"],
+                    "to": ["KB", "MB", "GB", "TB", "bytes"]
+                },
+                "speed": {
+                    "from": ["m/s", "km/h", "mph", "ft/s"],
+                    "to": ["m/s", "km/h", "mph", "ft/s"]
+                },
+                "volume": {
+                    "from": ["L", "mL", "gal", "in³"],
+                    "to": ["L", "mL", "gal", "in³"]
+                },
+                "area": {
+                    "from": ["m²", "km²", "ft²", "in²", "cm²"],
+                    "to": ["m²", "km²", "ft²", "in²", "cm²"]
+                },
+                "time": {
+                    "from": ["second", "minute", "hour", "day", "week", "month", "year"],
+                    "to": ["second", "minute", "hour", "day", "week", "month", "year"]
+                }
+            };
+
+            const categoryUnits = units[category];
+            categoryUnits.from.forEach(unit => {
+                let option = document.createElement("option");
+                option.value = unit;
+                option.text = unit;
+                unitFrom.appendChild(option);
+            });
+
+            categoryUnits.to.forEach(unit => {
+                let option = document.createElement("option");
+                option.value = unit;
+                option.text = unit;
+                unitTo.appendChild(option);
+            });
+        }
+        window.onload = updateUnitOptions;
+    </script>
+</head>
+<body>
+    <h1>Unit Converter</h1>
+
+    <form action="/convert" method="get">
+        <label for="value">Value:</label>
+        <input type="number" id="value" name="value" required>
+
+        <label for="category">Category:</label>
+        <select id="category" name="category" required onchange="updateUnitOptions()">
+            <option value="length">Length</option>
+            <option value="weight">Weight</option>
+            <option value="temperature">Temperature</option>
+            <option value="storage">Storage</option>
+            <option value="speed">Speed</option>
+            <option value="volume">Volume</option>
+            <option value="area">Area</option>
+            <option value="time">Time</option> <!-- New time category -->
+        </select>
+
+        <label for="unit_from">From:</label>
+        <select id="unit_from" name="unit_from" required></select>
+
+        <label for="unit_to">To:</label>
+        <select id="unit_to" name="unit_to" required></select>
+
+        <button type="submit">Convert</button>
+    </form>
+
+    {% if converted_value %}
+        <h3>Converted Value: {{ converted_value }}</h3>
+    {% endif %}
+</body>
+</html>
