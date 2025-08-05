@@ -1,132 +1,123 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi import Request
-from pathlib import Path
 
 app = FastAPI()
-templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "frontend"))
 
-# Length conversions
+# Serve static files from frontend/static
+app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
+
+# Templates directory (frontend root contains index.html)
+templates = Jinja2Templates(directory="../frontend")
+
+# Conversion functions
+
 def convert_length(value: float, unit_from: str, unit_to: str) -> float:
-    if unit_from == "inches" and unit_to == "cm":
-        return value * 2.54
-    elif unit_from == "cm" and unit_to == "inches":
-        return value / 2.54
-    elif unit_from == "feet" and unit_to == "cm":
-        return value * 30.48
-    elif unit_from == "cm" and unit_to == "feet":
-        return value / 30.48
-    elif unit_from == "meter" and unit_to == "cm":
-        return value * 100
-    elif unit_from == "cm" and unit_to == "meter":
-        return value / 100
-    elif unit_from == "kilometer" and unit_to == "cm":
-        return value * 100000
-    elif unit_from == "cm" and unit_to == "kilometer":
-        return value / 100000
-    elif unit_from == "meter" and unit_to == "kilometer":
-        return value / 1000
-    elif unit_from == "kilometer" and unit_to == "meter":
-        return value * 1000
-    return value
+    # Base unit: meter
+    to_meters = {
+        "meter": 1,
+        "kilometer": 1000,
+        "cm": 0.01,
+        "inches": 0.0254,
+        "feet": 0.3048
+    }
+    if unit_from not in to_meters or unit_to not in to_meters:
+        return value
+    meters = value * to_meters[unit_from]
+    return meters / to_meters[unit_to]
 
-# Weight conversions
 def convert_weight(value: float, unit_from: str, unit_to: str) -> float:
-    if unit_from == "kg" and unit_to == "pounds":
-        return value * 2.20462
-    elif unit_from == "pounds" and unit_to == "kg":
-        return value / 2.20462
-    elif unit_from == "g" and unit_to == "ounces":
-        return value * 0.035274
-    elif unit_from == "ounces" and unit_to == "g":
-        return value / 0.035274
-    return value
+    # Base unit: kg
+    to_kg = {
+        "kg": 1,
+        "pounds": 0.453592,
+        "g": 0.001,
+        "ounces": 0.0283495
+    }
+    if unit_from not in to_kg or unit_to not in to_kg:
+        return value
+    kg = value * to_kg[unit_from]
+    return kg / to_kg[unit_to]
 
-# Temperature conversions
 def convert_temperature(value: float, unit_from: str, unit_to: str) -> float:
-    if unit_from == "Celsius" and unit_to == "Fahrenheit":
-        return (value * 9/5) + 32
-    elif unit_from == "Fahrenheit" and unit_to == "Celsius":
-        return (value - 32) * 5/9
-    elif unit_from == "Celsius" and unit_to == "Kelvin":
-        return value + 273.15
-    elif unit_from == "Kelvin" and unit_to == "Celsius":
-        return value - 273.15
-    elif unit_from == "Fahrenheit" and unit_to == "Kelvin":
-        return (value - 32) * 5/9 + 273.15
-    elif unit_from == "Kelvin" and unit_to == "Fahrenheit":
-        return (value - 273.15) * 9/5 + 32
-    return value
+    if unit_from == unit_to:
+        return value
 
-# Data storage conversions
+    # Convert input to Celsius first
+    if unit_from == "Celsius":
+        celsius = value
+    elif unit_from == "Fahrenheit":
+        celsius = (value - 32) * 5 / 9
+    elif unit_from == "Kelvin":
+        celsius = value - 273.15
+    else:
+        return value
+
+    # Convert from Celsius to target
+    if unit_to == "Celsius":
+        return celsius
+    elif unit_to == "Fahrenheit":
+        return (celsius * 9 / 5) + 32
+    elif unit_to == "Kelvin":
+        return celsius + 273.15
+    else:
+        return value
+
 def convert_storage(value: float, unit_from: str, unit_to: str) -> float:
-    if unit_from == "KB" and unit_to == "bytes":
-        return value * 1024
-    elif unit_from == "bytes" and unit_to == "KB":
-        return value / 1024
-    elif unit_from == "MB" and unit_to == "KB":
-        return value * 1024
-    elif unit_from == "KB" and unit_to == "MB":
-        return value / 1024
-    elif unit_from == "GB" and unit_to == "MB":
-        return value * 1024
-    elif unit_from == "MB" and unit_to == "GB":
-        return value / 1024
-    elif unit_from == "TB" and unit_to == "GB":
-        return value * 1024
-    elif unit_from == "GB" and unit_to == "TB":
-        return value / 1024
-    return value
+    # Base unit: bytes
+    to_bytes = {
+        "bytes": 1,
+        "KB": 1024,
+        "MB": 1024 ** 2,
+        "GB": 1024 ** 3,
+        "TB": 1024 ** 4
+    }
+    if unit_from not in to_bytes or unit_to not in to_bytes:
+        return value
+    bytes_value = value * to_bytes[unit_from]
+    return bytes_value / to_bytes[unit_to]
 
-# Speed conversions
 def convert_speed(value: float, unit_from: str, unit_to: str) -> float:
-    if unit_from == "m/s" and unit_to == "km/h":
-        return value * 3.6
-    elif unit_from == "km/h" and unit_to == "m/s":
-        return value / 3.6
-    elif unit_from == "km/h" and unit_to == "mph":
-        return value / 1.60934
-    elif unit_from == "mph" and unit_to == "km/h":
-        return value * 1.60934
-    elif unit_from == "mph" and unit_to == "ft/s":
-        return value * 1.46667
-    elif unit_from == "ft/s" and unit_to == "mph":
-        return value / 1.46667
-    return value
+    # Base unit: m/s
+    to_mps = {
+        "m/s": 1,
+        "km/h": 1 / 3.6,
+        "mph": 0.44704,
+        "ft/s": 0.3048
+    }
+    if unit_from not in to_mps or unit_to not in to_mps:
+        return value
+    mps_value = value * to_mps[unit_from]
+    return mps_value / to_mps[unit_to]
 
-# Volume conversions
 def convert_volume(value: float, unit_from: str, unit_to: str) -> float:
-    if unit_from == "L" and unit_to == "mL":
-        return value * 1000
-    elif unit_from == "mL" and unit_to == "L":
-        return value / 1000
-    elif unit_from == "gal" and unit_to == "L":
-        return value * 3.78541
-    elif unit_from == "L" and unit_to == "gal":
-        return value / 3.78541
-    elif unit_from == "in³" and unit_to == "L":
-        return value * 0.0163871
-    elif unit_from == "L" and unit_to == "in³":
-        return value / 0.0163871
-    return value
+    # Base unit: liters
+    to_liters = {
+        "L": 1,
+        "mL": 0.001,
+        "gal": 3.78541,
+        "in³": 0.0163871
+    }
+    if unit_from not in to_liters or unit_to not in to_liters:
+        return value
+    liters_value = value * to_liters[unit_from]
+    return liters_value / to_liters[unit_to]
 
-# Area conversions
 def convert_area(value: float, unit_from: str, unit_to: str) -> float:
-    if unit_from == "m²" and unit_to == "km²":
-        return value / 1_000_000
-    elif unit_from == "km²" and unit_to == "m²":
-        return value * 1_000_000
-    elif unit_from == "ft²" and unit_to == "m²":
-        return value * 0.092903
-    elif unit_from == "m²" and unit_to == "ft²":
-        return value / 0.092903
-    elif unit_from == "in²" and unit_to == "cm²":
-        return value * 6.4516
-    elif unit_from == "cm²" and unit_to == "in²":
-        return value / 6.4516
-    return value
+    # Base unit: square meters (m²)
+    to_m2 = {
+        "m²": 1,
+        "km²": 1_000_000,
+        "ft²": 0.092903,
+        "in²": 0.00064516,  # inch squared to m²
+        "cm²": 0.0001
+    }
+    if unit_from not in to_m2 or unit_to not in to_m2:
+        return value
+    m2_value = value * to_m2[unit_from]
+    return m2_value / to_m2[unit_to]
 
-# Time conversions (NEW)
 def convert_time(value: float, unit_from: str, unit_to: str) -> float:
     to_seconds = {
         "second": 1,
@@ -135,37 +126,45 @@ def convert_time(value: float, unit_from: str, unit_to: str) -> float:
         "day": 86400,
         "week": 604800,
         "month": 2629800,   # average month (30.44 days)
-        "year": 31557600,   # average year (365.25 days)
+        "year": 31557600    # average year (365.25 days)
     }
-    # Lowercase for safety
-    unit_from, unit_to = unit_from.lower(), unit_to.lower()
+    unit_from = unit_from.lower()
+    unit_to = unit_to.lower()
     if unit_from not in to_seconds or unit_to not in to_seconds:
         return value
     seconds = value * to_seconds[unit_from]
-    result = seconds / to_seconds[unit_to]
-    return result
+    return seconds / to_seconds[unit_to]
 
+# Root endpoint serves index.html template
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# API endpoint for conversion
 @app.get("/convert")
-def convert(request: Request, value: float, unit_from: str, unit_to: str, category: str):
-    print(f"Received: value = {value}, unit_from = {unit_from}, unit_to = {unit_to}, category = {category}")
+async def convert(
+    value: float = Query(...),
+    unit_from: str = Query(...),
+    unit_to: str = Query(...),
+    category: str = Query(...)
+):
+    result = value  # default fallback
 
-    converted_value = value
     if category == "length":
-        converted_value = convert_length(value, unit_from, unit_to)
+        result = convert_length(value, unit_from, unit_to)
     elif category == "weight":
-        converted_value = convert_weight(value, unit_from, unit_to)
+        result = convert_weight(value, unit_from, unit_to)
     elif category == "temperature":
-        converted_value = convert_temperature(value, unit_from, unit_to)
+        result = convert_temperature(value, unit_from, unit_to)
     elif category == "storage":
-        converted_value = convert_storage(value, unit_from, unit_to)
+        result = convert_storage(value, unit_from, unit_to)
     elif category == "speed":
-        converted_value = convert_speed(value, unit_from, unit_to)
+        result = convert_speed(value, unit_from, unit_to)
     elif category == "volume":
-        converted_value = convert_volume(value, unit_from, unit_to)
+        result = convert_volume(value, unit_from, unit_to)
     elif category == "area":
-        converted_value = convert_area(value, unit_from, unit_to)
-    elif category == "time":  # Added time category support
-        converted_value = convert_time(value, unit_from, unit_to)
+        result = convert_area(value, unit_from, unit_to)
+    elif category == "time":
+        result = convert_time(value, unit_from, unit_to)
 
-    print(f"Converted value: {converted_value}")
-    return templates.TemplateResponse("index.html", {"request": request, "converted_value": converted_value})
+    return JSONResponse({"converted_value": result})
