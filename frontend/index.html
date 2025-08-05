@@ -4,7 +4,126 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unit Converter</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Main Container */
+        .container {
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            margin: 20px;
+        }
+
+        /* Header */
+        h1 {
+            font-size: 32px;
+            color: #5c6bc0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Form Styling */
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 18px;
+            margin-bottom: 5px;
+            margin-top: 15px;
+        }
+
+        input, select, button {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        input:focus, select:focus, button:focus {
+            outline: none;
+            border-color: #5c6bc0;
+        }
+
+        /* Placeholder Text */
+        select option:first-child {
+            color: #888;
+        }
+
+        /* Button Styling */
+        button {
+            background-color: #5c6bc0;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3f4c9d;
+        }
+
+        /* Converted Value Section */
+        .converted-value {
+            font-size: 20px;
+            color: #3f4c9d;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* Smooth transition for converted value */
+        .fade-in {
+            opacity: 0;
+            transition: opacity 1s ease-in;
+        }
+
+        .fade-in.show {
+            opacity: 1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 28px;
+            }
+
+            form {
+                width: 100%;
+            }
+
+            .container {
+                width: 100%;
+                padding: 20px;
+            }
+        }
+
+    </style>
     <script>
+        // Function to update the dropdown options
         function updateUnitOptions() {
             const category = document.getElementById("category").value;
             const unitFrom = document.getElementById("unit_from");
@@ -14,39 +133,39 @@
             unitFrom.innerHTML = "";
             unitTo.innerHTML = "";
 
-            // Define available units for each category -- these must match backend!
+            // Define available units for each category
             const units = {
                 "length": {
-                    "from": ["meter", "kilometer", "cm", "inches", "feet"],
-                    "to": ["meter", "kilometer", "cm", "inches", "feet"]
+                    "from": ["Select Unit", "meter", "kilometer", "cm", "inches", "feet"],
+                    "to": ["Select Unit", "meter", "kilometer", "cm", "inches", "feet"]
                 },
                 "weight": {
-                    "from": ["kg", "pounds", "g", "ounces"],
-                    "to": ["kg", "pounds", "g", "ounces"]
+                    "from": ["Select Unit", "kg", "pounds", "g", "ounces"],
+                    "to": ["Select Unit", "kg", "pounds", "g", "ounces"]
                 },
                 "temperature": {
-                    "from": ["Celsius", "Fahrenheit", "Kelvin"],
-                    "to": ["Celsius", "Fahrenheit", "Kelvin"]
+                    "from": ["Select Unit", "Celsius", "Fahrenheit", "Kelvin"],
+                    "to": ["Select Unit", "Celsius", "Fahrenheit", "Kelvin"]
                 },
                 "storage": {
-                    "from": ["KB", "MB", "GB", "TB", "bytes"],
-                    "to": ["KB", "MB", "GB", "TB", "bytes"]
+                    "from": ["Select Unit", "KB", "MB", "GB", "TB", "bytes"],
+                    "to": ["Select Unit", "KB", "MB", "GB", "TB", "bytes"]
                 },
                 "speed": {
-                    "from": ["m/s", "km/h", "mph", "ft/s"],
-                    "to": ["m/s", "km/h", "mph", "ft/s"]
+                    "from": ["Select Unit", "m/s", "km/h", "mph", "ft/s"],
+                    "to": ["Select Unit", "m/s", "km/h", "mph", "ft/s"]
                 },
                 "volume": {
-                    "from": ["L", "mL", "gal", "in³"],
-                    "to": ["L", "mL", "gal", "in³"]
+                    "from": ["Select Unit", "L", "mL", "gal", "in³"],
+                    "to": ["Select Unit", "L", "mL", "gal", "in³"]
                 },
                 "area": {
-                    "from": ["m²", "km²", "ft²", "in²", "cm²"],
-                    "to": ["m²", "km²", "ft²", "in²", "cm²"]
+                    "from": ["Select Unit", "m²", "km²", "ft²", "in²", "cm²"],
+                    "to": ["Select Unit", "m²", "km²", "ft²", "in²", "cm²"]
                 },
                 "time": {
-                    "from": ["second", "minute", "hour", "day", "week", "month", "year"],
-                    "to": ["second", "minute", "hour", "day", "week", "month", "year"]
+                    "from": ["Select Unit", "second", "minute", "hour", "day", "week", "month", "year"],
+                    "to": ["Select Unit", "second", "minute", "hour", "day", "week", "month", "year"]
                 }
             };
 
@@ -65,39 +184,86 @@
                 unitTo.appendChild(option);
             });
         }
-        window.onload = updateUnitOptions;
+
+        // Display converted value with user-friendly text
+        function displayConvertedValue(value, fromUnit, toUnit) {
+            const convertedValueDiv = document.querySelector('.converted-value');
+            convertedValueDiv.innerHTML = `${value} ${toUnit}`;  // Simple, clear message with value and unit
+            convertedValueDiv.classList.add('show');
+            convertedValueDiv.style.display = 'block'; // Make it visible after conversion
+        }
+
+        // Trigger conversion and display results
+        function convert() {
+            const value = parseFloat(document.getElementById("value").value);
+            const fromUnit = document.getElementById("unit_from").value;
+            const toUnit = document.getElementById("unit_to").value;
+
+            // Check if the values are valid
+            if (value && fromUnit !== "Select Unit" && toUnit !== "Select Unit") {
+                let result;
+
+                // Conversion Logic
+                if (fromUnit === "meter" && toUnit === "cm") {
+                    result = value * 100; // 1 meter = 100 cm
+                } else if (fromUnit === "kilometer" && toUnit === "meter") {
+                    result = value * 1000; // 1 kilometer = 1000 meters
+                } else if (fromUnit === "kg" && toUnit === "pounds") {
+                    result = value * 2.20462; // 1 kg = 2.20462 pounds
+                } else if (fromUnit === "Celsius" && toUnit === "Fahrenheit") {
+                    result = (value * 9/5) + 32; // Celsius to Fahrenheit
+                } else {
+                    alert('Conversion not implemented for this combination!');
+                    return;
+                }
+
+                displayConvertedValue(result, fromUnit, toUnit);
+            } else {
+                alert('Please fill out all fields properly!');
+            }
+        }
+
+        window.onload = function() {
+            // Initializing the dropdowns
+            updateUnitOptions();
+        };
     </script>
 </head>
 <body>
-    <h1>Unit Converter</h1>
+    <div class="container">
+        <h1>Unit Converter</h1>
 
-    <form action="/convert" method="get">
-        <label for="value">Value:</label>
-        <input type="number" id="value" name="value" required>
+        <form id="conversion-form">
+            <label for="value">Value:</label>
+            <input type="number" id="value" name="value" required placeholder="Enter a value to convert">
 
-        <label for="category">Category:</label>
-        <select id="category" name="category" required onchange="updateUnitOptions()">
-            <option value="length">Length</option>
-            <option value="weight">Weight</option>
-            <option value="temperature">Temperature</option>
-            <option value="storage">Storage</option>
-            <option value="speed">Speed</option>
-            <option value="volume">Volume</option>
-            <option value="area">Area</option>
-            <option value="time">Time</option> <!-- New time category -->
-        </select>
+            <label for="category">Category:</label>
+            <select id="category" name="category" required onchange="updateUnitOptions()">
+                <option value="" selected>Select Conversion</option>
+                <option value="length">Length</option>
+                <option value="weight">Weight</option>
+                <option value="temperature">Temperature</option>
+                <option value="storage">Storage</option>
+                <option value="speed">Speed</option>
+                <option value="volume">Volume</option>
+                <option value="area">Area</option>
+                <option value="time">Time</option>
+            </select>
 
-        <label for="unit_from">From:</label>
-        <select id="unit_from" name="unit_from" required></select>
+            <label for="unit_from">From:</label>
+            <select id="unit_from" name="unit_from" required>
+                <option value="" selected>Select Unit</option>
+            </select>
 
-        <label for="unit_to">To:</label>
-        <select id="unit_to" name="unit_to" required></select>
+            <label for="unit_to">To:</label>
+            <select id="unit_to" name="unit_to" required>
+                <option value="" selected>Select Unit</option>
+            </select>
 
-        <button type="submit">Convert</button>
-    </form>
+            <button type="button" onclick="convert()">Convert</button>
+        </form>
 
-    {% if converted_value %}
-        <h3>Converted Value: {{ converted_value }}</h3>
-    {% endif %}
+        <div class="converted-value fade-in"></div>
+    </div>
 </body>
 </html>
