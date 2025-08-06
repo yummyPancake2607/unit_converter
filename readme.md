@@ -1,6 +1,4 @@
-Sure! Here's a clear, professional README.md file for your Unit Converter project that you can include in your GitHub repository before deploying:
 
-```markdown
 # Unit Converter Web Application
 
 A responsive and user-friendly **Unit Converter** web application built with **FastAPI** (Python) backend and a modern HTML/CSS/JavaScript frontend.
